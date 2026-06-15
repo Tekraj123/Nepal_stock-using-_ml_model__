@@ -1,0 +1,34 @@
+numpy 
+setuptools
+pandas
+scikit-learn
+seaborn
+matplotlib
+flask
+xgboost
+catboost
+# -e .
+
+
+
+
+
+
+
+# conda init
+# conda create -p ./venv python=3.13.9 -y
+# conda activate ./venv
+# pip install -r requirements.txt
+#  alwawys select ./venv/python.exe   as interpreter in vscode
+
+
+
+
+#  python -m src.components.data_ingestion        to runa any program in src folder     
+
+
+
+
+
+
+
