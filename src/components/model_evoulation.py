@@ -14,7 +14,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from sklearn.ensemble import (
     RandomForestRegressor,
 )
-
+from sklearn.model_selection import GridSearchCV
 from xgboost import XGBRegressor
 
 from sklearn.tree import DecisionTreeClassifier,DecisionTreeRegressor
@@ -43,31 +43,39 @@ class modelEvoulation:
             preprocessor=load_obj(file_path)
             logging.info("in the model Evoulation ")
 
+
+
             for day in range(1,8):
-
-
-
 
                 train[f'Target_Day{day}']=train['Close'].shift(-day)
                 test[f'Target_Day{day}']=test['Close'].shift(-day)
                 trains=train.dropna()
                 tests=test.dropna()
+                logging.info (f"the columns are {train.isnull().sum()}")  
+                logging.info (f"the columns are {test.isnull().sum()}")  
 
                 x_train=preprocessor.fit_transform(trains)
                 logging.info(f"preprocessed x_train shape {x_train.shape}")
                 x_test=preprocessor.transform(tests)
                 logging.info(f"preprocessed x_test shape {x_test.shape}")
 
-            
                 y_train=trains[f'Target_Day{day}']
                 logging.info(f"preprocessed y_train shape {y_train.shape}")
 
                 y_test=np.array(tests[f'Target_Day{day}'])
                 logging.info(f"preprocessed y_test shape {y_test.shape}")
 
-
-                model=RandomForestRegressor() 
-                model.fit (x_train,y_train) 
+            
+                param= {
+                        'n_estimators': [100, 200],
+                        'max_depth': [10, 20, None],
+                        'min_samples_split': [2, 5],
+                }
+                model=RandomForestRegressor()
+                grid=GridSearchCV(estimator=model,param_grid=param,cv=5,n_jobs=-1) 
+                model=grid.fit (x_train,y_train)   
+                model.best_estimator_
+                model.fit (x_train,y_train)         
 
                 # models[f'Day{day}'] = model
                 model_path=os.path.join('artifacts',f"{self.symbol}",f"model_{self.symbol}_{day}.pkl")    
@@ -89,13 +97,4 @@ class modelEvoulation:
 
         except Exception as e:
             raise CustomException(e,sys)
-
-
-
-
-            
-            
-
-
-        
 

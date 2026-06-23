@@ -13,10 +13,7 @@ class modelTranning:
     def model_tranning(self,data_path,preprocessor_path):
         try:
             data=pd.read_csv(data_path)
-            data=data[['Symbol','Date','Open', 'High', 'Low', 'Close', 'VWAP', 
-                    'Vol', 'Prev. Close', 'Turnover', 'Trans.', 'Diff', 'Range', 'Diff %',
-                    'Range %', 'VWAP %', '120 Days', '180 Days', '52 Weeks High',
-                    '52 Weeks Low']]
+            data=data[['Open', 'High', 'Low', 'Close', 'VWAP','Vol', "Daily_return","SMA_20","EMA_20","RSI_14","MACD"]]
             latest_data=data.iloc[-1]
             latest_data = data.tail(1)
             logging.info(",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.............................................")
@@ -45,45 +42,66 @@ class modelTranning:
 
                 latest_data['VWAP'] = (latest_data['High'] + latest_data['Low'] + latest_data['Close'])/3
 
-                latest_data['prev. Close']=latest_data['Close']             ## hijo ko close ===prev .Close ===latest_data['Close']
-
-                latest_data['Diff']=predicted_value-latest_data['Close']
-
-                latest_data['Diff %']=(latest_data['Diff']/latest_data['Close'])*100
-
-                latest_data['Range']=latest_data['High']=latest_data['Low']
-
-                latest_data['Range %']=(latest_data['Range']/latest_data['Close'])*100
-
-                latest_data['VWAP %']=((latest_data['VWAP']-latest_data['Close'])/latest_data['Close'])*100
-
-                # latest_data['120 Days']= predicted_value if predicted_value >= latest_data['Close'] \
-                #       else latest_data['120 Days']  ## have to cahnge ...........................................................................
-                
-                # latest_data['180 Days']= predicted_value if predicted_value >= latest_data['Close'] \
-                #       else latest_data['180 Days'] ## have to change ...............................................................................
-                
-                predicted_price = predicted_value[0]
-                close_price = latest_data['Close'].iloc[0]
-
-                if predicted_price >= close_price:
-                    latest_data.loc[:, '120 Days'] = predicted_price
-                else:
-                    latest_data.loc[:, '120 Days'] = latest_data['120 Days'].iloc[0]
-
-                if predicted_price >= close_price:
-                    latest_data.loc[:, '180 Days'] = predicted_price
-                else:
-                    latest_data.loc[:, '180 Days'] = latest_data['180 Days'].iloc[0]
 
 
+                # df contains:
+                # Open, High, Low, Close, Volume
+
+                # =====================
+                # Future Return (using shift(-1))
+                # =====================
+                latest_data["Future_Return"] = (
+                    latest_data["Close"] - latest_data["Close"].shift(-1)
+                ) / latest_data["Close"].shift(-1)
+
+                # =====================
+                # SMA(20)
+                # =====================
+                latest_data["SMA_20"] = latest_data["Close"].rolling(window=20).mean()
+
+                # =====================
+                # EMA(20)
+                # =====================
+                latest_data["EMA_20"] = latest_data["Close"].ewm(span=20, adjust=False).mean()
+
+                # =====================
+                # RSI(14) using shift(-1)
+                # =====================
+                delta = latest_data["Close"] - latest_data["Close"].shift(-1)
+
+                gain = delta.clip(lower=0)
+                loss = -delta.clip(upper=0)
+
+                avg_gain = gain.rolling(window=14).mean()
+                avg_loss = loss.rolling(window=14).mean()
+
+                rs = avg_gain / avg_loss
+
+                latest_data["RSI_14"] = 100 - (100 / (1 + rs))
+
+                # =====================
+                # MACD
+                # =====================
+                ema12 = latest_data["Close"].ewm(span=12, adjust=False).mean()
+                ema26 = latest_data["Close"].ewm(span=26, adjust=False).mean()
+
+                latest_data["MACD"] = ema12 - ema26
+
+                # =====================
+                # ATR(14) using shift(-1)
+                # =====================
+                tr1 = latest_data["High"] - latest_data["Low"]
+
+                tr2 = abs(latest_data["High"] - latest_data["Close"].shift(-1))
+                tr3 = abs(latest_data["Low"] - latest_data["Close"].shift(-1))
+
+                tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+                latest_data["ATR_14"] = tr.rolling(window=14).mean()
 
 
-
-                latest_data['52 Weeks High'] = max(latest_data['52 Weeks High'].values[0],predicted_value)
            
-                latest_data['52 Weeks Low'] = max(latest_data['52 Weeks Low'].values[0],predicted_value)
-
+                
             logging.info(f'the predicted calue are {stock_predicted_price}')
 
             return stock_predicted_price

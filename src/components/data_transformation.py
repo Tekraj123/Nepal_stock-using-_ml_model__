@@ -40,15 +40,8 @@ class dataTransformation:
               
 
 
-               columns= ['Open', 'High', 'Low', 'Close', 'VWAP', 
-                    'Vol', 'Prev. Close', 'Turnover', 'Trans.', 'Diff', 'Range', 'Diff %',
-                    'Range %', 'VWAP %', '120 Days', '180 Days', '52 Weeks High',
-                    '52 Weeks Low']
-               
-
-               
-
-               
+               columns= ['Open', 'High', 'Low', 'Close', 'VWAP','Vol', "Daily_return","SMA_20","EMA_20","RSI_14","MACD"]
+          
                pipeline=Pipeline(
                     steps=[
                          ('imputer',SimpleImputer(strategy='median')),
@@ -59,7 +52,7 @@ class dataTransformation:
                logging.info("make the pipeline")
 
                preprocessor_obj=ColumnTransformer([
-                    ('colum',pipeline,columns)
+                    ('columns',pipeline,columns)
                ])
 
                logging.info("make the conumn transfer ")

@@ -44,14 +44,44 @@ class DataIngestion:
 
             # सबै files एकै DataFrame मा जोड्ने
             combined = pd.concat(all_dfs, ignore_index=True)
-            combined.replace('-', pd.NA, inplace=True)
+            
+            logging.info(f"{combined['Symbol'].unique().tolist()}")  
+            combined.replace('-', pd.NA, inplace=True)  
             # सबै files एकै DataFrame मा जोड्ने
 
             combined=combined[['Symbol','Date','Open', 'High', 'Low', 'Close', 'VWAP', 
                     'Vol', 'Prev. Close', 'Turnover', 'Trans.', 'Diff', 'Range', 'Diff %',
                     'Range %', 'VWAP %', '120 Days', '180 Days', '52 Weeks High',
                     '52 Weeks Low']]
+            ## adding featue 
+            combined['Daily_return']=(combined['Close']-combined['Close'].shift(1))/combined['Close'].shift(1)
+            combined['SMA_20']=combined['Close'].rolling(window=20).mean()
+            combined['EMA_20']=combined['Close'].ewm(span=20,adjust=False).mean()
             
+            # RSI(14)
+#            =====================
+            delta = combined["Close"].diff()
+            gain = delta.clip(lower=0)
+            loss = -delta.clip(upper=0)
+            avg_gain = gain.rolling(14).mean()
+            avg_loss = loss.rolling(14).mean()
+            rs = avg_gain / avg_loss
+            combined["RSI_14"] = 100 - (100 / (1 + rs))
+
+            # MACD
+            # =====================
+            ema12 = (
+                combined["Close"]
+                .ewm(span=12, adjust=False)
+                .mean()
+            )
+            ema26 = (
+                combined["Close"]
+                .ewm(span=26, adjust=False)
+                .mean()
+            )
+            combined["MACD"] = ema12 - ema26
+
             combined=combined.dropna()
         
 
@@ -72,7 +102,7 @@ class DataIngestion:
 
                 # df['close'] = df['close'].interpolate(method='nearest')
 
-            logging.info("Train Test split successfully")
+            logging.info(f"Train Test split successfully {combined.head()}")
 
 
             os.makedirs(os.path.dirname(self.data_ingestion_path.data_path), exist_ok=True)
@@ -101,3 +131,7 @@ class DataIngestion:
 #     for symbol in ('NABIL','AKJCL','AVYAN'):
 #         data_ingestion = DataIngestion(symbol)  
 #         data_ingestion.initiate_data_ingestion()  
+
+
+
+
